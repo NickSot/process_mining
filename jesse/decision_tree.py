@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-class Node():
+class NodeDTC():
     def __init__(self, feature_index=None, threshold=None, left=None, right=None, info_gain=None, value=None):
         '''Constructor'''
 
@@ -11,6 +11,20 @@ class Node():
         self.left = left
         self.right = right
         self.info_gain = info_gain
+
+        # For leaf node
+        self.value = value
+
+class NodeDTR():
+    def __init__(self, feature_index=None, threshold=None, left=None, right=None, var_red=None, value=None):
+        '''Constructor'''
+
+        # For decision node
+        self.feature_index = feature_index
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.var_red = var_red
 
         # For leaf node
         self.value = value
@@ -35,7 +49,7 @@ class DecisionTreeClassifier():
         self.min_samples_split = min_samples_split
         self.max_depth = max_depth
     
-    def build_tree(self, dataset : pd.DataFrame, curr_depth : int =0) -> Node:
+    def build_tree(self, dataset : pd.DataFrame, curr_depth : int =0) -> NodeDTC:
         '''Recursive method to build the tree
 
         Parameters
@@ -60,7 +74,7 @@ class DecisionTreeClassifier():
             # Find the best split
             best_split = self.get_best_split(dataset, num_features)
 
-            if best_split['info_gain'] > 0:
+            if hasattr(best_split, 'info_gain') and best_split['info_gain'] > 0:
                 # Recurse left
                 left_subtree = self.build_tree(best_split['dataset_left'], curr_depth + 1)
 
@@ -68,13 +82,13 @@ class DecisionTreeClassifier():
                 right_subtree = self.build_tree(best_split['dataset_right'], curr_depth + 1)
 
                 # Return the decision node
-                return Node(best_split['feature_index'], best_split['threshold'], left_subtree, right_subtree, best_split['info_gain'])
+                return NodeDTC(best_split['feature_index'], best_split['threshold'], left_subtree, right_subtree, best_split['info_gain'])
         
         # Compute leaf node
         leaf_value = self.calculate_leaf_value(Y)
 
         # Return leaf node
-        return Node(value=leaf_value)
+        return NodeDTC(value=leaf_value)
     
     def get_best_split(self, dataset : pd.DataFrame, num_features : int) -> dict:
         '''Method to find the best split
@@ -260,7 +274,7 @@ class DecisionTreeRegressor():
         self.min_samples_split = min_samples_split
         self.max_depth = max_depth
     
-    def build_tree(self, dataset : pd.DataFrame, curr_depth : int =0) -> Node:
+    def build_tree(self, dataset : pd.DataFrame, curr_depth : int =0) -> NodeDTR:
         '''Recursive method to build the tree
 
         Parameters
@@ -287,7 +301,7 @@ class DecisionTreeRegressor():
             # Find the best split
             best_split = self.get_best_split(dataset, num_features)
 
-            if best_split['var_red'] > 0:
+            if hasattr(best_split, 'var_red') and best_split['var_red'] > 0:
                 # Recurse left
                 left_subtree = self.build_tree(best_split['dataset_left'], curr_depth + 1)
 
@@ -295,13 +309,13 @@ class DecisionTreeRegressor():
                 right_subtree = self.build_tree(best_split['dataset_right'], curr_depth + 1)
 
                 # Return the decision node
-                return Node(best_split['feature_index'], best_split['threshold'], left_subtree, right_subtree, best_split['var_red'])
+                return NodeDTR(best_split['feature_index'], best_split['threshold'], left_subtree, right_subtree, best_split['var_red'])
         
         # Compute leaf node
         leaf_value = self.calculate_leaf_value(Y)
 
         # Return leaf node
-        return Node(value=leaf_value)
+        return NodeDTR(value=leaf_value)
     
     def variance_reduction(self, parent, l_child, r_child):
         """Method to compute the information gain"""
@@ -338,7 +352,7 @@ class DecisionTreeRegressor():
                 threshold : `int`,
                 dataset_left : `Dataframe`,
                 dataset_right: `Dataframe`,
-                info_gain : `float`
+                var_red : `float`
             }
         '''
         # Dictionary to store the best split
@@ -438,7 +452,7 @@ class DecisionTreeRegressor():
             print(tree.value)
 
         else:
-            print("X_"+str(tree.feature_index), "<=", tree.threshold, "?", tree.info_gain)
+            print("X_"+str(tree.feature_index), "<=", tree.threshold, "?", tree.var_red)
             print("%sleft:" % (indent), end="")
             self.print_tree(tree.left, indent + indent)
             print("%sright:" % (indent), end="")
